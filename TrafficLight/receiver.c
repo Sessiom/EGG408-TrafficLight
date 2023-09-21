@@ -10,6 +10,7 @@ RF24 radio(9, 8);          // CE, CSN
 const byte addresses[][10] = {"ADDRESS01" , "ADDRESS02"};
 
 bool redON = false;
+bool yellowON = true;
 const int redLED = 3;    // Red LED
 const int yellowLED = 6;   // Yellow LED
 const int B2_Pin = 5;     // Pushbutton B2
@@ -35,9 +36,13 @@ void loop() {
     }
   int B2_State = digitalRead(B2_Pin);
 
-   if (B2_State == HIGH) {
+   if (B2_State == HIGH && (redON == true)) {
      radio.stopListening();
+     for(int i = 0; i < 200; i++){
      radio.write(&txt2, sizeof(txt2)); Serial.println("sent"); Serial.println(txt2);
+     }
+     delay(5000);                                                                    // Wait for Car to exit
+     digitalWrite(redLED, LOW); redON = false;
    } 
 
    if (radio.available() && (redON == false)) {

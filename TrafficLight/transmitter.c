@@ -33,22 +33,30 @@ void loop() {
    if(redON == false) {
     flashYellow();
     }
-  redLight();
+   if(yellowON == false) {   
+    digitalWrite(redLED, HIGH); redON = true;
+    }
+  else{
+    digitalWrite(redLED, LOW); redON = false;
+  }
+
+
   int B2_State = digitalRead(B2_Pin);
 
-   if (B2_State == HIGH) {
+   if (B2_State == HIGH && (redON == true)) {
      radio.stopListening();
+     for(int i = 0; i < 200; i++){
      radio.write(&txt2, sizeof(txt2)); Serial.println("sent"); Serial.println(txt2);
+     }
      delay(5000);                                                                    // Wait for Car to exit
-     digitalWrite(redLED, LOW); 
-     redON = false;
+     digitalWrite(redLED, LOW); redON = false;
    } 
 
-   if (radio.available()) {
+   if (radio.available() && (redON == false)) {
     char txt[2] = "";
     radio.read(&txt, sizeof(txt));
     switch (txt[1]) {
-      case '2': digitalWrite(redLED, HIGH); break;
+      case '2': goToRed(); break;
     }
     Serial.println("received");
     Serial.println(txt);
@@ -59,25 +67,16 @@ void loop() {
 void goToRed() {
   digitalWrite(yellowLED, HIGH);
   delay(3000);
-  digitalWrite(yellowLED, LOW);
+  digitalWrite(yellowLED, LOW); yellowON = false;
   digitalWrite(redLED, HIGH); redON = true;
 }
 
 void flashYellow() {
   digitalWrite(yellowLED, HIGH);
   delay(500);
-  digitalWrite(yellowLED, LOW);
+  digitalWrite(yellowLED, LOW); yellowON = true;
   delay(500);
-  yellowON = true;
 }
 
-void redLight() {
-  if(yellowON == false) {
-    digitalWrite(redLED, HIGH);
-    }
-  else{
-    digitalWrite(redLED, LOW);
-    redON = false;
-  }
-}
+
 
