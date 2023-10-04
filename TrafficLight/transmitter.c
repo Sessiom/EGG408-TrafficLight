@@ -1,6 +1,18 @@
+/*
+Breadboard-
+pin 3 Red LED
+pin 4 Yellow LED
+pin 7 button/sensor
 
-// Code 2 : Push Button and LED (Transmitter)
-// Library: TMRh20/RF24 (https://github.com/tmrh20/RF24/)
+NRF24 Tranceiver-
+pin 13 CLK
+pin 12 MISO
+pin 11 MOSI
+pin 9 CE
+pin 8 CSN
+
+Library: TMRh20/RF24 (https://github.com/tmrh20/RF24/)
+*/
 
 #include <SPI.h>
 #include <RF24.h>
@@ -35,6 +47,7 @@ void setup() {
   radio.openWritingPipe(addresses[0]);
   radio.openReadingPipe(1, addresses[1]);
   radio.setPALevel(RF24_PA_MIN);
+  radio.enableAckPayload();
 };
 
 void loop() {
@@ -50,24 +63,27 @@ void loop() {
 
    if(radio.available() && (isRedOn == false)) {  // if a car pulls up to the opposite light
     char txt[2] = "";
-    radio.read(&txt, sizeof(txt));                 // read the information
+    radio.read(&txt, sizeof(txt));                              // read the information
+    radio.writeAckPayload(1,"received", 1);                     // send acknowledgement of recieved message
     switch (txt[1]) {
-      case '2': goToRed(); Serial.println("received"); break;                  // go to red
+      case '2': goToRed(); Serial.println("received"); break;   // go to red
     }
 
     delay(100);
     }
 
    if (button_state == HIGH && (isRedOn == true)) {    // if a car pulls up to the red light
-     radio.stopListening();                        // set radio to transmit information
-     for(int i = 0; i < 20; i++){
-     radio.write(&txt2, sizeof(txt2)); Serial.println("sent"); Serial.println(txt2);
-     }
-     delay(5000);                                  // Wait 5 seconds for Car to exit
-     digitalWrite(redLED, LOW); 
-     isRedOn = false;                              // turn off red light
-     isYellowOn = true;                            // turn on yellow light
-     radio.flush_rx();
+     radio.stopListening();                            // set radio to transmit information
+     radio.write(&txt2, sizeof(txt2)); Serial.println("sent"); Serial.println(txt2); //send message
+     delay(100);
+     if(radio.isAckPayloadAvailable())           //if the message is recieved
+      {
+           delay(5000);                          // Wait 5 seconds for Car to exit
+           digitalWrite(redLED, LOW); 
+           isRedOn = false;                      // turn off red light 
+           isYellowOn = true;                    // turn on yellow light
+      }
+     radio.flush_rx();                           // empty the reciever buffer
    } 
 
 }
