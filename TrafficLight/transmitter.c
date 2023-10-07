@@ -25,11 +25,11 @@ const byte addresses[][10] = {"ADDRESS01" , "ADDRESS02"};
 unsigned long prevTime = millis();
 
 // time intervals for the tasks
-long interval_T1 = 1000; // blink every 1 second
+long interval_T1 = 800; // blink every 1 second
 
 bool isRedOn = true;        //Starts with a red light
 
-bool isYellowOn = false;
+
 int yellowLED_state = LOW;
 
 const int redLED = 3;       // Red LED
@@ -51,45 +51,70 @@ void setup() {
 };
 
 void loop() {
-  radio.startListening();        //set radio to receive information
-   if(isRedOn == false) {        //check if red lights are off
+
+/* Set radio to recieve information */
+radio.startListening();                  
+
+/* Check the state of this light*/
+  if(isRedOn == true){                   
+    digitalWrite(redLED, HIGH);          
+    }
+  else if(isRedOn == false) {            
     flashYellow();
     }
-   else if(isRedOn == true){     //check if red lights are on
-    digitalWrite(redLED,HIGH);   
-   }
 
-  int button_state = digitalRead(button);   //check state of the button
+/* Check the state of this button */
+int button_state = digitalRead(button);  
 
-   if(radio.available() && (isRedOn == false)) {  // if a car pulls up to the opposite light
-    char txt[2] = "";
-    radio.read(&txt, sizeof(txt));                              // read the information
-    radio.writeAckPayload(1,"received", 1);                     // send acknowledgement of recieved message
-    switch (txt[1]) {
-      case '2': goToRed(); Serial.println("received"); break;   // go to red
-    }
+/* If a car is at the opposite light (A message is incoming and this light is yellow) */
+    if(radio.available() && (isRedOn == false)) {         
+      char txt[2] = "";
+      radio.read(&txt, sizeof(txt));                      // read the information
+      Serial.println("radio recieved");
+      Serial.println(""); 
+      radio.flush_rx();                                   // empty reciever buffer
+       switch (txt[1]) {
+          case '2': goToRed(); break;                     // go to red
+          }
+      radio.stopListening();                              // set radio to transmit information
+      Serial.println("Sending Acknowledgement...");
+      Serial.println("");
+        for(int i=0; i<40; i++){
+          radio.write(&txt3, sizeof(txt3));               // send acknowledgement message
+        }
+      delay(100);
+     }
 
-    delay(100);
-    }
-
-   if (button_state == HIGH && (isRedOn == true)) {    // if a car pulls up to the red light
-     radio.stopListening();                            // set radio to transmit information
-     radio.write(&txt2, sizeof(txt2)); Serial.println("sent"); Serial.println(txt2); //send message
-     delay(100);
-     if(radio.isAckPayloadAvailable())           //if the message is recieved
-      {
-           delay(5000);                          // Wait 5 seconds for Car to exit
-           digitalWrite(redLED, LOW); 
-           isRedOn = false;                      // turn off red light 
-           isYellowOn = true;                    // turn on yellow light
+/* Acknowledgement that a message was recieved (A message is incoming and this light is red) */
+      if(radio.available() && (isRedOn == true)) {        
+        char txt[2] = "";
+        radio.read(&txt, sizeof(txt));                    // read the information
+          switch (txt[1]) {
+            case '0': 
+              Serial.println("Recieved Acknowledgement");
+              Serial.println("");
+              delay(5000);                                // Wait 5 seconds for the car to exit
+              digitalWrite(redLED, LOW); 
+              isRedOn = false;                            // turn off red light 
+              radio.flush_rx();
+            break;                                        // will thengo to yellow
+          } 
       }
-     radio.flush_rx();                           // empty the reciever buffer
-   } 
 
+/* If a car pull up to this light (Button is pressed and this light is red) */
+   if (button_state == HIGH && (isRedOn == true)) {       
+     radio.stopListening();                               // set radio to transmit information
+     Serial.println("Sending Message...");
+     Serial.println("");
+      for(int i=0; i<40; i++){
+        radio.write(&txt2, sizeof(txt2));                 // send message
+        }
+     delay(100);
+   }  
 }
 
 void flashYellow() {
-   unsigned long currentTime = millis();
+  unsigned long currentTime = millis();
 
   if(currentTime- prevTime> interval_T1){
     yellowLED_state = !yellowLED_state;
@@ -102,7 +127,6 @@ void goToRed() {
   digitalWrite(yellowLED, HIGH);
   delay(3000);
   digitalWrite(yellowLED, LOW); 
-  isYellowOn = false;
-  digitalWrite(redLED, HIGH); 
+  digitalWrite(redLED, HIGH);
   isRedOn = true;
 }
