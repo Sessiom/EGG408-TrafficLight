@@ -59,16 +59,15 @@ void setup() {
   radio.begin();
   radio.openWritingPipe(addresses[0]);
   radio.openReadingPipe(1, addresses[1]);
-  radio.setPALevel(RF24_PA_MIN);
+  radio.setPALevel(RF24_PA_HIGH);
   
   /* servo */
   servo1.attach(3);
   servo1.write(180);
-  servo1.detach();
 };
 
 void loop() {
-
+servo1.detach();
 /* Set radio to recieve information */
 radio.startListening();                  
 
