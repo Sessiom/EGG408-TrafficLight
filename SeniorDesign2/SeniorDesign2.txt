@@ -1,0 +1,1 @@
+The goal is to count the number of cars in the lane and only change light if the lane is empty
